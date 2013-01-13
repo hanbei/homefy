@@ -16,7 +16,8 @@ class Player(threading.Thread):
 	
 	def __init__(self, ):
 		threading.Thread.__init__(self)		
-		self.lock = threading.Lock()
+		self.status_lock = threading.RLock()
+		self.file_lock = threading.Lock()
 		self.from_player, self.to_player = popen2.popen2("mpg123 -Rq", 0)
 		self.playing = False
 		self.paused = False
@@ -35,7 +36,8 @@ class Player(threading.Thread):
 		self._start_play()
 			
 	def stop(self):
-		self._send('s')
+		if self.playing:
+			self._send('s')
 		self.playing = False
 		
 	def pause(self):
@@ -44,10 +46,8 @@ class Player(threading.Thread):
 		
 	def next(self):
 		"""Play the next song in the playlist."""
-		if(self.playing):
-			self.stop()
 		self.current_song += 1
-		if(self.current_song >= len(self.playlist)):
+		if self.current_song >= len(self.playlist) or self.playing:
 			self.stop()
 		else:
 			self._start_play()
@@ -58,10 +58,8 @@ class Player(threading.Thread):
 		The current song will be stopped and the song that has been played
 		previously will be played. 
 		"""
-		if(self.playing):
-			self.stop()
 		self.current_song -= 1
-		if(self.current_song < 0):
+		if self.current_song < 0 or self.playing:
 			self.stop()
 		else:
 			self._start_play()
@@ -77,16 +75,16 @@ class Player(threading.Thread):
 		self._running = False
 		self._send('q')
 		
-		self.lock.acquire()
+		self.file_lock.acquire()
 		buf = self.from_player.read()
-		self.lock.release()
 		self.from_player.close()
 		self.to_player.close
+		self.file_lock.release()
 	
 	def status(self):
-		self.lock.acquire()
+		self.status_lock.acquire()
 		s = self.current_status.copy()
-		self.lock.release()
+		self.status_lock.release()
 		return s
 		
 	def _start_play(self):
@@ -102,10 +100,13 @@ class Player(threading.Thread):
 	def run(self):
 		self._running = True
 		while self._running:
-			self.lock.acquire()
-			line = self.from_player.readline()
+			if not self.from_player.closed:
+				self.file_lock.acquire()
+				line = self.from_player.readline()
+				self.file_lock.release()
+			self.status_lock.acquire()
 			self._parse_line(line)
-			self.lock.release()
+			self.status_lock.release()
 			
 	def _parse_line(self, line):
 		splitted_line = line.split(' ')
@@ -132,12 +133,11 @@ class StatusPrinter(threading.Thread):
 	def run(self):
 		while self.running:
 			status = self.player.status()
-			print "%f/%d" % (status.elapsed_time, status.song_length)
-			time.sleep(1)
+			print "%f/%d %s" % (status.elapsed_time, status.song_length, str(self.player.playing))
+			time.sleep(0.5)
 
 if __name__ == "__main__":
     import sys
-
 
     p = Player()
     sp = StatusPrinter(p)
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     sp.start()
     while p.playing:
 		time.sleep(1)
-		
+    sp.running = False
     p.close()
     
     
