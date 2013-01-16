@@ -1,5 +1,7 @@
+import os
 from whoosh.index import *
-from whoosh.fields import Schema, TEXT, ID, NUMERIC
+from whoosh.fields import Schema, TEXT, ID, NUMERIC, STORED
+from whoosh.analysis import LowercaseFilter
 
 class Artist:
     def __init__(self, title, picture_path = ''):
@@ -34,34 +36,34 @@ class Type:
 
 class Indexer:
 	
-	
     def __init__(self, index_dir):
 		artist_schema = Schema(id=ID(stored=True), 
-			title=TEXT(analzer=LowercaseFilter()), 
-			_stored_title=STORED, 
+			title=TEXT(stored=True, sortable=True), 
 			picture_path=ID(stored=True))
 		album_schema = Schema(id=ID(stored=True), 
-			title=TEXT(analzer=LowercaseFilter()), 
-			_stored_title=STORED, 
+			title=TEXT(stored=True, sortable=True), 
 			picture_path=ID(stored=True),
 			year=NUMERIC(stored=True),
 			artist=TEXT(stored=True))
 		track_schema = Schema(id=ID(stored=True), 
-			title=TEXT(analzer=LowercaseFilter()), 
-			_stored_title=STORED, 
+			title=TEXT(stored=True, sortable=True), 
 			artist=TEXT(stored=True),
 			album=TEXT(stored=True),
 			genre=TEXT(stored=True),
 			length=NUMERIC(stored=True),
 			track_no=NUMERIC(stored=True),
 			volumne_no=TEXT(stored=True))
-		
-		self.artist_index_writer = index.create_index(index_dir, schema=artist_schema, indexname="artists").writer()
-		self.album_index_writer = index.create_index(index_dir, schema=album_schema, indexname="albums").writer()
-		self.track_index_writer = index.create_index(index_dir, schema=track_schema, indexname="tracks").writer()
+
+		if not os.path.exists(index_dir):
+			os.mkdir(index_dir)    			
+
+		self.artist_index_writer = create_in(index_dir, schema=artist_schema, indexname="artists").writer()
+		self.album_index_writer = create_in(index_dir, schema=album_schema, indexname="albums").writer()
+		self.track_index_writer = create_in(index_dir, schema=track_schema, indexname="tracks").writer()
 
     def add_artist(self, artist):
-        self.artist_index_writer.add_document(id=artist.id, title=artist.title, picture_path=artist.picture_path)
+		print artist.id, artist.title, artist.picture_path
+		self.artist_index_writer.add_document(id=artist.id, title=artist.title, picture_path=artist.picture_path)
 
     def add_album(self, album):
         self.album_index_writer.add_document(id=album.id, title=album.title, artist=album.artist, 
