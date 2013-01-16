@@ -5,28 +5,28 @@ from whoosh.analysis import LowercaseFilter
 
 class Artist:
     def __init__(self, title, picture_path = ''):
-        self.title = title
-        self.picture_path = picture_path
-        self.id = title + picture_path
+        self.title = unicode(title)
+        self.picture_path = unicode(picture_path)
+        self.id = unicode(title + picture_path)
 
 class Album:
     def __init__(self, artist, title, year = '', picture_path = ''):
-        self.title = title
-        self.artist = artist
+        self.title = unicode(title)
+        self.artist = unicode(artist)
         self.year = year
-        self.picture_path = picture_path
-        self.id = title + year + artist
+        self.picture_path = unicode(picture_path)
+        self.id = unicode(title + str(year) + artist)
 
 class Track:
-    def __init__(self, artist, album, title):
-        self.artist = artist
-        self.album = album
-        self.title = title
-        self.genre = ''
-        self.length = 0
-        self.track_no = 0
-        self.volume_no = 0
-        self.id = artist + album + title + str(track_no)
+    def __init__(self, artist, album, title, genre='', track_no=0, length=0, volumne_no=0):
+        self.artist = unicode(artist)
+        self.album = unicode(album)
+        self.title = unicode(title)
+        self.genre = unicode(genre)
+        self.length = length
+        self.track_no = track_no
+        self.volume_no = volumne_no
+        self.id = unicode(artist + album + title + str(track_no))
 
 class Type:
     def __init__(self):
@@ -38,21 +38,21 @@ class Indexer:
 	
     def __init__(self, index_dir):
 		artist_schema = Schema(id=ID(stored=True), 
-			title=TEXT(stored=True, sortable=True), 
+			title=TEXT(stored=True), 
 			picture_path=ID(stored=True))
 		album_schema = Schema(id=ID(stored=True), 
-			title=TEXT(stored=True, sortable=True), 
+			title=TEXT(stored=True), 
 			picture_path=ID(stored=True),
-			year=NUMERIC(stored=True),
+			year=ID(stored=True),
 			artist=TEXT(stored=True))
 		track_schema = Schema(id=ID(stored=True), 
-			title=TEXT(stored=True, sortable=True), 
+			title=TEXT(stored=True), 
 			artist=TEXT(stored=True),
 			album=TEXT(stored=True),
 			genre=TEXT(stored=True),
 			length=NUMERIC(stored=True),
 			track_no=NUMERIC(stored=True),
-			volumne_no=TEXT(stored=True))
+			volume_no=NUMERIC(stored=True))
 
 		if not os.path.exists(index_dir):
 			os.mkdir(index_dir)    			
@@ -62,17 +62,16 @@ class Indexer:
 		self.track_index_writer = create_in(index_dir, schema=track_schema, indexname="tracks").writer()
 
     def add_artist(self, artist):
-		print artist.id, artist.title, artist.picture_path
 		self.artist_index_writer.add_document(id=artist.id, title=artist.title, picture_path=artist.picture_path)
 
     def add_album(self, album):
         self.album_index_writer.add_document(id=album.id, title=album.title, artist=album.artist, 
-			picture_path=album.picture_path, year=album.year)
+			picture_path=album.picture_path, year=unicode(str(album.year)))
 
     def add_track(self, track):
         self.track_index_writer.add_document(artist=track.artist, album=track.album,
-			title=track.title, genre=title.genre, length=track.length, track_no=track.track_no,
-			volume_no=track.volumne_no, id=track.id)
+			title=track.title, genre=track.genre, length=track.length, track_no=track.track_no,
+			volume_no=track.volume_no, id=track.id)
 
     def commit(self):
         self.artist_index_writer.commit()
