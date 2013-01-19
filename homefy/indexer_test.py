@@ -51,8 +51,8 @@ class TestIndexer(unittest.TestCase):
 
 
 	def test_add_track(self):
-		self.indexer.add_track(model.Track(title=u'TitleBla', artist='ArtistTest', album='TestAlbum', genre='Metal'))
-		self.indexer.add_track(model.Track(title=u'TitleBla2', artist='ArtistTest', album='TestAlbum2', genre='Metal'))
+		self.indexer.add_track(model.Track(title=u'TitleBla', artist='ArtistTest', album='TestAlbum', path='path', genre='Metal'))
+		self.indexer.add_track(model.Track(title=u'TitleBla2', artist='ArtistTest', album='TestAlbum2', path='path2', genre='Metal'))
 		self.indexer.commit()
 		
 		with open_dir(self.index_dir, indexname='tracks').searcher() as searcher:
