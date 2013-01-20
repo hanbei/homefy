@@ -1,8 +1,10 @@
 import os
 import hashlib
 from whoosh import query
+from whoosh import analysis
 from whoosh.index import *
 from whoosh.fields import Schema, TEXT, ID, NUMERIC
+from whoosh.qparser import QueryParser
 
 class Artist:
     def __init__(self, title, picture_path=''):
@@ -39,19 +41,23 @@ class Track:
         self.path = unicode(path)
         self.id = unicode(hashlib.md5(path).hexdigest())
 
+
 class Type:
-    def __init__(self):
-        self.ARTIST = 0
-        self.ALBUM = 2
-        self.TRACK = 4
+    ARTIST = 'ARTIST'
+    ALBUM = 'ALBUM'
+    TRACK = 'TRACK'
 
 
 class Indexer:
     def __init__(self, index_dir):
-        artist_schema = Schema(id=ID(stored=True), title=TEXT(stored=True), picture_path=ID(stored=True))
-        album_schema = Schema(id=ID(stored=True), title=TEXT(stored=True), picture_path=ID(stored=True),
+        title_analyzer = analysis.SpaceSeparatedTokenizer() | analysis.LowercaseFilter() | analysis.NgramFilter(2)
+        artist_schema = Schema(id=ID(stored=True), title=TEXT(analyzer=title_analyzer, stored=True),
+            picture_path=ID(stored=True))
+        album_schema = Schema(id=ID(stored=True), title=TEXT(analyzer=title_analyzer, stored=True),
+            picture_path=ID(stored=True),
             year=ID(stored=True), artist=TEXT(stored=True))
-        track_schema = Schema(id=ID(stored=True), title=TEXT(stored=True), artist=TEXT(stored=True),
+        track_schema = Schema(id=ID(stored=True), title=TEXT(analyzer=title_analyzer, stored=True),
+            artist=TEXT(stored=True),
             album=TEXT(stored=True), genre=TEXT(stored=True), length=NUMERIC(stored=True),
             track_no=NUMERIC(stored=True), volume_no=NUMERIC(stored=True), path=ID(stored=True))
 
@@ -105,7 +111,36 @@ class Searcher:
         return None
 
     def search(self, query, page=-1, page_size=10):
-        pass
+        search_results = list()
+        qp_artist = QueryParser('title', self.artist_searcher.schema)
+        query = qp_artist.parse(unicode(query))
+        if page < 1:
+            artist_hits = self.artist_searcher.search(query, limit=None, sortedby='title')
+        else:
+            artist_hits = self.artist_searcher.search(query, page, page_size, sortedby='title')
+        for hit in artist_hits:
+            search_results.append(SearchResult(self._artist_from_document(hit), Type.ARTIST))
+
+        qp_album = QueryParser('title', self.album_searcher.schema)
+        query = qp_album.parse(unicode(query))
+        if page < 1:
+            album_hits = self.album_searcher.search(query, limit=None, sortedby='title')
+        else:
+            album_hits = self.album_searcher.search(query, page, page_size, sortedby='title')
+        for hit in album_hits:
+            search_results.append(SearchResult(self._album_from_document(hit), Type.ALBUM))
+
+        qp_track = QueryParser('title', self.track_searcher.schema)
+        query = qp_track.parse(unicode(query))
+        if page < 1:
+            track_hits = self.track_searcher.search(query, limit=None, sortedby='title')
+        else:
+            track_hits = self.track_searcher.search(query, page, page_size, sortedby='title')
+        for hit in track_hits:
+            search_results.append(SearchResult(self._track_from_document(hit), Type.TRACK))
+
+        return search_results
+
 
     def album_by_artist(self, artist_id, page=-1, page_size=10):
         artist = self.artist(artist_id)
@@ -167,8 +202,13 @@ class Searcher:
 
 
 class SearchResult:
-    def __init__(self, type, title, id):
+    def __init__(self, data, type):
+        self.data = data
         self.type = type
-        self.title = title
-        self.id = id
+
+    def __repr__(self):
+        return self.data.title + " " + self.type
+
+    def __str__(self):
+        return self.data.title + " " + self.type
 

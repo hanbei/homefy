@@ -15,10 +15,10 @@ class TestIndexer(unittest.TestCase):
 		self.indexer.commit()
 		
 		with open_dir(self.index_dir, indexname='artists').searcher() as searcher:
-			title_terms = list(searcher.lexicon('title'))
+			title_terms = list(searcher.lexicon('id'))
 			self.assertEqual(2, len(title_terms))
-			self.assertEqual(u'titlebla', title_terms[0])
-			self.assertEqual(u'titlebla2', title_terms[1])
+			self.assertEqual(u'da87d6f2506c306b630d8ed22082b15b', title_terms[0])
+			self.assertEqual(u'dc9fa80af1d02f5550d13a0629cc38bd', title_terms[1])
 			path_terms = list(searcher.lexicon('picture_path'))
 			self.assertEqual(2, len(path_terms))
 			self.assertEqual(u"test/tset/test.jpg", path_terms[0])
@@ -31,10 +31,10 @@ class TestIndexer(unittest.TestCase):
 		self.indexer.commit()
 		
 		with open_dir(self.index_dir, indexname='albums').searcher() as searcher:
-			title_terms = list(searcher.lexicon('title'))
+			title_terms = list(searcher.lexicon('id'))
 			self.assertEqual(2, len(title_terms))
-			self.assertEqual(u'titlebla', title_terms[0])
-			self.assertEqual(u'titlebla2', title_terms[1])
+			self.assertEqual(u'4a202a41c580496e0591f8a4285c8f84', title_terms[0])
+			self.assertEqual(u'cc31deaa190bc25620f9e52b8f47a4fd', title_terms[1])
 			
 			path_terms = list(searcher.lexicon('picture_path'))
 			self.assertEqual(2, len(path_terms))
@@ -56,10 +56,10 @@ class TestIndexer(unittest.TestCase):
 		self.indexer.commit()
 		
 		with open_dir(self.index_dir, indexname='tracks').searcher() as searcher:
-			title_terms = list(searcher.lexicon('title'))
+			title_terms = list(searcher.lexicon('id'))
 			self.assertEqual(2, len(title_terms))
-			self.assertEqual(u'titlebla', title_terms[0])
-			self.assertEqual(u'titlebla2', title_terms[1])
+			self.assertEqual(u'c832fc52362cfaac7cf87a517e289c3a', title_terms[0])
+			self.assertEqual(u'd6fe1d0be6347b8ef2427fa629c04485', title_terms[1])
 			
 			album_terms = list(searcher.lexicon('album'))
 			self.assertEqual(2, len(album_terms))

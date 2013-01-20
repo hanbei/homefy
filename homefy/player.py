@@ -7,13 +7,22 @@ class Status:
 		self.song_length = song_length
 		self.elapsed_time = elapsed_time
 		self.remaining_time = remaining_time
-		
+
 	def copy(self):
 		s = Status(self.song_length, self.elapsed_time, self.remaining_time)
 		return s
-	
+
+def singleton(cls):
+	instances = {}
+	def getinstance():
+		if cls not in instances:
+			instances[cls] = cls()
+		return instances[cls]
+	return getinstance
+
+@singleton
 class Player(threading.Thread):
-	
+
 	def __init__(self, ):
 		threading.Thread.__init__(self)		
 		self.status_lock = threading.RLock()
@@ -21,29 +30,30 @@ class Player(threading.Thread):
 		self.from_player, self.to_player = popen2.popen2("mpg123 -Rq", 0)
 		self.playing = False
 		self.paused = False
+		self.closed = False
 		self.current_status = Status()
 		self.start()
-		
+
 	def load(self, songs):
 		self.playlist = songs
 		self.current_song = 0
 		print self.playlist
-		
+
 	def play(self):		
 		if(self.playing):
 			self.stop()
 		print self.playlist[self.current_song]
 		self._start_play()
-			
+
 	def stop(self):
 		if self.playing:
 			self._send('s')
 		self.playing = False
-		
+
 	def pause(self):
 		self._send('p')
 		self.paused = not self.paused
-		
+
 	def next(self):
 		"""Play the next song in the playlist."""
 		self.current_song += 1
@@ -51,10 +61,10 @@ class Player(threading.Thread):
 			self.stop()
 		else:
 			self._start_play()
-		
+
 	def prev(self):
 		"""Play the song that was played before. 
-		   
+
 		The current song will be stopped and the song that has been played
 		previously will be played. 
 		"""
@@ -63,34 +73,36 @@ class Player(threading.Thread):
 			self.stop()
 		else:
 			self._start_play()
-		
+
 	def close(self):
 		"""Close the player and terminate the mpg123 subprocess. 
-	
+
 		After close() was called this instance can not be reused.
 		"""
 		if(self.playing):
 			self.stop()
-			
+
 		self._running = False
-		self._send('q')
-		
+
 		self.file_lock.acquire()
-		buf = self.from_player.read()
-		self.from_player.close()
-		self.to_player.close
+		if not self.closed:
+			self._send('q')
+			buf = self.from_player.read()
+			self.from_player.close()
+			self.to_player.close
+			self.closed = True
 		self.file_lock.release()
-	
+
 	def status(self):
 		self.status_lock.acquire()
 		s = self.current_status.copy()
 		self.status_lock.release()
 		return s
-		
+
 	def _start_play(self):
 		self._send('l', self.playlist[self.current_song])		
 		self.playing = True
-		
+
 	def _send(self, command, data=''):
 		if(data == ''):
 			self.to_player.write("%s\n" % (command))
@@ -99,16 +111,19 @@ class Player(threading.Thread):
 
 	def run(self):
 		self._running = True
+		line = ""
 		while self._running:
+			self.file_lock.acquire()
 			if not self.from_player.closed:
-				self.file_lock.acquire()
 				line = self.from_player.readline()
-				self.file_lock.release()
+			self.file_lock.release()
 			self.status_lock.acquire()
 			self._parse_line(line)
 			self.status_lock.release()
-			
+
 	def _parse_line(self, line):
+		if line:
+			return
 		splitted_line = line.split(' ')
 		if splitted_line[0] == '@S':
 			self.current_status.song_length = int(splitted_line[11])
@@ -129,7 +144,7 @@ class StatusPrinter(threading.Thread):
 		threading.Thread.__init__(self)		
 		self.player = player
 		self.running = True
-		
+
 	def run(self):
 		while self.running:
 			status = self.player.status()
@@ -137,26 +152,26 @@ class StatusPrinter(threading.Thread):
 			time.sleep(0.5)
 
 if __name__ == "__main__":
-    import sys
+	import sys
 
-    p = Player()
-    sp = StatusPrinter(p)
-    
-    p.load(sys.argv[1:])
-    p.play()
-    #time.sleep(0.5)
-    #p.stop()
-    #time.sleep(10)
-    #p.next()
-    #time.sleep(10)
-    #p.next()
-    #time.sleep(1)
-    sp.start()
-    while p.playing:
+	p = Player()
+	sp = StatusPrinter(p)
+
+	p.load(sys.argv[1:])
+	p.play()
+	#time.sleep(0.5)
+	#p.stop()
+	#time.sleep(10)
+	#p.next()
+	#time.sleep(10)
+	#p.next()
+	#time.sleep(1)
+	sp.start()
+	while p.playing:
 		time.sleep(1)
-    sp.running = False
-    p.close()
-    
-    
-    
-    
+	sp.running = False
+	p.close()
+
+
+
+
