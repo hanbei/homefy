@@ -23,14 +23,14 @@ class Album:
         self.year = year
         self.picture_path = unicode(picture_path)
         hash = hashlib.md5()
-        hash.update(self.title)
-        hash.update(str(year))
+        hash.update(unicode(self.title).encode('utf-8'))
+        hash.update(unicode(str(year)))
         hash.update(self.artist)
         self.id = unicode(hash.hexdigest())
 
 
 class Track:
-    def __init__(self, artist, album, title, path, genre='', track_no=0, length=0, volume_no=0):
+    def __init__(self, artist, album, title, path, genre='', track_no=0, length=0.0, volume_no=0):
         self.artist = unicode(artist)
         self.album = unicode(album)
         self.title = unicode(title)
@@ -39,7 +39,13 @@ class Track:
         self.track_no = track_no
         self.volume_no = volume_no
         self.path = unicode(path)
-        self.id = unicode(hashlib.md5(path).hexdigest())
+        self.id = unicode(hashlib.md5(self.path.encode('utf-8')).hexdigest())
+
+    def __str__(self):
+        return self.artist.encode('utf-8') + "/" + self.album.encode('utf-8') + "/" + str(self.track_no) + "-" + self.title.encode('utf-8')
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class Type:
