@@ -25,8 +25,6 @@ def index_artist(artist_dir):
         print 'file: ' + + artist_name
     else:
         pic_path = picture_path(artist_dir, u'artist')
-        if pic_path:
-            print pic_path
         indexer.add_artist(model.Artist(artist_name, pic_path))
     album_dirs = os.listdir(artist_dir)
     for album_dir in album_dirs:
@@ -53,39 +51,51 @@ def index_albums(artist_name, album_path):
     indexer.add_album(model.Album(artist_name, title, year, album_art_path))
     for track_file in os.listdir(album_path):
         track = os.path.join(album_path, track_file)
-        if os.path.isfile(track) and os.path.splitext(track)[1] == '.mp3':
+        if os.path.isfile(track) and os.path.splitext(track)[1] == u'.mp3':
             index_track(artist_name, title, track)
 
 
-frame_to_schema = {
-    'TBPM': 'bpm',
-    'TRCK': 'track_number',
-    'TLEN': 'length'
-}
-
 def index_track(artist_name, album_name, track_path):
-    tag = tagger.ID3v2(track_path)
+    try:
+	    tag = tagger.ID3v2(track_path)
+    except (UnicodeDecodeError, UnicodeEncodeError) as e:
+        print track_path
+        print e
+        print
+        return
+
     track = model.Track(artist_name, album_name, '', track_path)
     for frame in tag.frames:
-        frame_join = "".join(frame.strings)
-        if frame.fid == 'TIT2':
+        if len(frame.strings) > 0:
+            frame_join = frame.strings[0]#.encode('utf-8')
+        else:
+            frame_join = u''
+        if frame.fid == u'TIT2':
             track.title = frame_join
-        elif frame.fid == 'TCON':
+        elif frame.fid == u'TCON':
             track.genre = frame_join
-        elif frame.fid == 'TRCK':
+        elif frame.fid == u'TRCK':
             try:
-                track.track_no = int(frame.strings[0])
+                track_name = os.path.split(track_path)[1]
+                name_split = track_name.split('-', 1)
+                if len(name_split) <= 1:
+                    name_split = track_name.split('.', 1)
+                track.track_no = int(name_split[0])
             except:
-                print '\'' + frame.strings[0] + '\'\t' + track_path
-        elif frame.fid == 'TLEN':
-            track.length = float(frame_join.replace(':', '.'))
+                print "Error track no: " + track_path.encode('utf-8')
+                print frame_join
+                print
+                #print '\'' + frame.strings[0] + '\'\t'
+        elif frame.fid == u'TLEN':
+            #track.length = float(frame_join.replace(':', '.'))
+            pass
         else:
             pass
             #print ""
-    #print str(track)
-    #indexer.add_track(track)
+            #print track.toString()
+            #indexer.add_track(track)
 
-indexer = model.Indexer('index')
+indexer = model.Indexer(u'index')
 
 music_dir = u"/home/hanbei/Music"
 artist_dirs = os.listdir(music_dir)
