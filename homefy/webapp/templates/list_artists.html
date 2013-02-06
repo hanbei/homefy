@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+    <title>Homefy - Artists</title>
+</head>
+<body>
+<table>
+    <tr>
+        <td>Title</td>
+        <td>Pic</td>
+    </tr>
+    {% for artist in artists %}
+    <tr>
+        <td><a href="{{ url_for('artists_albums', id=artist.id) }}">{{artist.title}}</a></td>
+        <td><img src="file://{{artist.picture_path}}" /></td>
+    </tr>
+    {% endfor %}
+</table>
+</body>
