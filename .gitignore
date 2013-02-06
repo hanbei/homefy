@@ -1,3 +1,5 @@
 index
 *.pyc
 .idea
+.project
+.pydevproject
