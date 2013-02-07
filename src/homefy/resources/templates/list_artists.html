@@ -11,7 +11,7 @@
     </tr>
     {% for artist in artists %}
     <tr>
-        <td><a href="{{ url_for('artists_albums', id=artist.id) }}">{{artist.title}}</a></td>
+        <td>{{artist.title}}</td>
         <td><img src="file://{{artist.picture_path}}" /></td>
     </tr>
     {% endfor %}

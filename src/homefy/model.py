@@ -1,10 +1,9 @@
-import os
-import hashlib
-from whoosh import query
-from whoosh import analysis
-from whoosh.index import *
+import os.path
+from whoosh import analysis, query
+from whoosh.index import create_in, open_dir
 from whoosh.fields import Schema, TEXT, ID, NUMERIC
 from whoosh.qparser import QueryParser
+import hashlib
 
 UTF8 = 'utf-8'
 
@@ -15,10 +14,10 @@ class Artist:
 			self.picture_path = picture_path.encode(UTF8)
 		else:
 			self.picture_path = ''
-		hash = hashlib.md5()
-		hash.update(self.title)
-		hash.update(self.picture_path)
-		self.id = hash.hexdigest().encode(UTF8)
+		hash_id = hashlib.md5()
+		hash_id.update(self.title)
+		hash_id.update(self.picture_path)
+		self.id = hash_id.hexdigest().encode(UTF8)
 
 
 class Album:
@@ -30,11 +29,11 @@ class Album:
 			self.picture_path = picture_path.encode(UTF8)
 		else:
 			self.picture_path = ''
-		hash = hashlib.md5()
-		hash.update(self.title)
-		hash.update(str(year).encode(UTF8))
-		hash.update(self.artist)
-		self.id = hash.hexdigest().encode(UTF8)
+		hash_id = hashlib.md5()
+		hash_id.update(self.title)
+		hash_id.update(str(year).encode(UTF8))
+		hash_id.update(self.artist)
+		self.id = hash_id.hexdigest().encode(UTF8)
 
 class Track:
 	def __init__(self, artist, album, title, path, genre='', track_no=0, length=0.0, volume_no=0):
@@ -50,10 +49,6 @@ class Track:
 
 	def toString(self):
 		s = ''
-		#s =  s + self.artist
-		#s = s + "/"
-		#s = s + self.album
-		#s = s + "/"
 		s = s + str(self.track_no)
 		s = s + "-"
 		s = s + self.title
@@ -191,15 +186,24 @@ class Searcher:
 			result_list.append(self._track_from_document(doc))
 		return result_list
 
-	def artists(self, page=-1, page_size=10):
+	def all_artists(self, page=-1, page_size=10):
 		if page > 0:
 			artists = self.artist_searcher.search_page(query.Every(), page, page_size, sortedby='title')
 		else:
 			artists = self.artist_searcher.search(query.Every(), sortedby='title', limit=None)
 
 		result_list = list()
+		print "---- Unsorted -----"
 		for artist in artists:
-			result_list.append(self._artist_from_document(artist))
+			new_artist = self._artist_from_document(artist)
+			result_list.append(new_artist)
+			print new_artist.title
+			
+		result_list.sort(key=lambda artist: artist.title.lower)
+		print "---- Sorted -----"
+		for artist in result_list:
+			print artist.title
+			
 		return result_list
 
 	def close(self):

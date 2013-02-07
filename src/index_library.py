@@ -1,5 +1,5 @@
 import os
-import model
+import homefy.model as model
 import tagger
 
 def picture_path(pic_path, pic_name):

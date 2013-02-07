@@ -88,17 +88,17 @@ class TestSearcher(unittest.TestCase):
         self.assertEquals(4, tracks[2].track_no)
 
     def test_artists(self):
-        artists = self.searcher.artists()
-        self.assertEquals(3, len(artists))
+        all_artists = self.searcher.all_artists()
+        self.assertEquals(3, len(all_artists))
 
-        self.assertEquals(u'ArtistTest', artists[0].title)
-        self.assertEquals(u"test/tset/test.jpg", artists[0].picture_path)
+        self.assertEquals(u'ArtistTest', all_artists[0].title)
+        self.assertEquals(u"test/tset/test.jpg", all_artists[0].picture_path)
 
-        self.assertEquals(u'C', artists[2].title)
-        self.assertEquals(u"test2.jpg", artists[2].picture_path)
+        self.assertEquals(u'C', all_artists[2].title)
+        self.assertEquals(u"test2.jpg", all_artists[2].picture_path)
 
-        self.assertEquals(u'Z', artists[1].title)
-        self.assertEquals(u"z.jpg", artists[1].picture_path)
+        self.assertEquals(u'Z', all_artists[1].title)
+        self.assertEquals(u"z.jpg", all_artists[1].picture_path)
 
     def test_search(self):
         hits = self.searcher.search('test')
