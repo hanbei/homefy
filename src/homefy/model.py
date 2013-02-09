@@ -199,7 +199,7 @@ class Searcher:
 			result_list.append(new_artist)
 			print new_artist.title
 			
-		result_list.sort(key=lambda artist: artist.title.lower)
+		result_list.sort(key=lambda artist: artist.title.lower())
 		print "---- Sorted -----"
 		for artist in result_list:
 			print artist.title
