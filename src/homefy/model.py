@@ -19,6 +19,8 @@ class Artist:
 		hash_id.update(self.picture_path)
 		self.id = hash_id.hexdigest().encode(UTF8)
 
+	def to_json(self):
+		return {"id":self.id, "title":self.title, "picture_path":self.picture_path}
 
 class Album:
 	def __init__(self, artist, title, year=0, picture_path=''):
@@ -124,7 +126,7 @@ class Searcher:
 			return self._track_from_document(document)
 		return None
 
-	def search(self, query, page=-1, page_size=10):
+	def search(self, query, page= -1, page_size=10):
 		search_results = list()
 		qp_artist = QueryParser('title', self.artist_searcher.schema)
 		query = qp_artist.parse(unicode(query))
@@ -156,7 +158,7 @@ class Searcher:
 		return search_results
 
 
-	def album_by_artist(self, artist_id, page=-1, page_size=10):
+	def album_by_artist(self, artist_id, page= -1, page_size=10):
 		artist = self.artist(artist_id)
 		if artist == None:
 			return None
@@ -171,7 +173,7 @@ class Searcher:
 			result_list.append(self._album_from_document(doc))
 		return result_list
 
-	def tracks_by_album(self, album_id, page=-1, page_size=10):
+	def tracks_by_album(self, album_id, page= -1, page_size=10):
 		album = self.album(album_id)
 		if album == None:
 			return None
@@ -186,24 +188,18 @@ class Searcher:
 			result_list.append(self._track_from_document(doc))
 		return result_list
 
-	def all_artists(self, page=-1, page_size=10):
+	def all_artists(self, page= -1, page_size=10):
 		if page > 0:
 			artists = self.artist_searcher.search_page(query.Every(), page, page_size, sortedby='title')
 		else:
 			artists = self.artist_searcher.search(query.Every(), sortedby='title', limit=None)
 
 		result_list = list()
-		print "---- Unsorted -----"
 		for artist in artists:
 			new_artist = self._artist_from_document(artist)
 			result_list.append(new_artist)
-			print new_artist.title
 			
-		result_list.sort(key=lambda artist: artist.title.lower())
-		print "---- Sorted -----"
-		for artist in result_list:
-			print artist.title
-			
+		result_list.sort(key=lambda artist: artist.title.lower())			
 		return result_list
 
 	def close(self):
