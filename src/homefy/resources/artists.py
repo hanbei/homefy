@@ -16,6 +16,14 @@ def list_artists():
         return jsonify(artists=[x.to_json() for x in all_artists])
     return render_template('list_artists.html', artists=all_artists)
 
+@resource.route('/artists/<artist_id>')
+def artist(artist_id):
+    artist = homefy.injector.searcher.artist(artist_id)
+    if request_wants_json():
+        return jsonify(artist.to_json())
+    albums = homefy.injector.searcher.album_by_artist(artist_id)
+    print albums
+    return render_template('artist.html', artist=artist, albums=albums)
 
 def request_wants_json():
     best = request.accept_mimetypes.best_match(['application/json', 'text/html'])

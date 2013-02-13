@@ -173,6 +173,7 @@ class Searcher:
 			result_list.append(self._album_from_document(doc))
 		return result_list
 
+
 	def tracks_by_album(self, album_id, page= -1, page_size=10):
 		album = self.album(album_id)
 		if album == None:
@@ -221,9 +222,9 @@ class Searcher:
 
 
 class SearchResult:
-	def __init__(self, data, type):
+	def __init__(self, data, result_type):
 		self.data = data
-		self.type = type
+		self.type = result_type
 
 	def __repr__(self):
 		return self.data.title + " " + self.type
