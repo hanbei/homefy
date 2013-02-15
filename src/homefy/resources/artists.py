@@ -9,14 +9,14 @@ from flask.helpers import jsonify
 
 resource = Blueprint('artists', __name__, template_folder='templates')
 
-@resource.route('/artists')
+@resource.route('/artists/')
 def list_artists():
     all_artists= homefy.injector.searcher.all_artists()
     if request_wants_json():
         return jsonify(artists=[x.to_json() for x in all_artists])
     return render_template('list_artists.html', artists=all_artists)
 
-@resource.route('/artists/<artist_id>')
+@resource.route('/artists/<artist_id>/')
 def artist(artist_id):
     artist = homefy.injector.searcher.artist(artist_id)
     if request_wants_json():

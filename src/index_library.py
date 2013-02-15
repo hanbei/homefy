@@ -21,18 +21,20 @@ def picture_path(pic_path, pic_name):
 
 def index_artist(artist_dir):
     artist_name = os.path.split(artist_dir)[1]
+    artist = None
     if os.path.isfile(artist_dir):
         print 'file: ' + + artist_name
     else:
         pic_path = picture_path(artist_dir, u'artist')
-        indexer.add_artist(model.Artist(artist_name, pic_path))
+        artist = model.Artist(artist_name, pic_path)
+        indexer.add_artist(artist)
     album_dirs = os.listdir(artist_dir)
     for album_dir in album_dirs:
         if os.path.isdir(os.path.join(artist_dir, album_dir)):
-            index_albums(artist_name, os.path.join(artist_dir, album_dir))
+            index_albums(artist, os.path.join(artist_dir, album_dir))
 
 
-def index_albums(artist_name, album_path):
+def index_albums(artist, album_path):
     album_name = os.path.split(album_path)[1]
     name_split = album_name.split('-', 1)
     year = 0000
@@ -48,23 +50,24 @@ def index_albums(artist_name, album_path):
     else:
         title = name_split[0].strip()
     album_art_path = picture_path(album_path, u'folder')
-    indexer.add_album(model.Album(artist_name, title, year, album_art_path))
+    album = model.Album(artist.id, artist.title, title, year, album_art_path)
+    indexer.add_album(album)
     for track_file in os.listdir(album_path):
         track = os.path.join(album_path, track_file)
         if os.path.isfile(track) and os.path.splitext(track)[1] == u'.mp3':
-            index_track(artist_name, title, track)
+            index_track(artist, album, track)
 
 
-def index_track(artist_name, album_name, track_path):
+def index_track(artist, album, track_path):
     try:
-	    tag = tagger.ID3v2(track_path)
+        tag = tagger.ID3v2(track_path)
     except (UnicodeDecodeError, UnicodeEncodeError) as e:
         print track_path
         print e
         print
         return
 
-    track = model.Track(artist_name, album_name, '', track_path)
+    track = model.Track(artist.title, album.title, '', track_path)
     for frame in tag.frames:
         if len(frame.strings) > 0:
             frame_join = frame.strings[0]#.encode('utf-8')

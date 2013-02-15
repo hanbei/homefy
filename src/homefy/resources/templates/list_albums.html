@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+    <title>Homefy - Artists</title>
+</head>
+<body>
+<table>
+    <tr>
+        <td>Title</td>
+        <td>Pic</td>
+    </tr>
+    {% for album in albums %}
+    <tr>
+    	<td>{{album.artist_id}}</a></td>
+    	<td>{{album.artist}}</a></td>
+        <td>{{album.title}}</a></td>
+        <td>{{album.year}}</a></td>
+        <td><img src="file://{{album.picture_path}}" /></td>
+    </tr>
+    {% endfor %}
+</table>
+</body>

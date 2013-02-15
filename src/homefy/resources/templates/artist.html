@@ -13,7 +13,7 @@
     </tr>
     {% for album in albums %}
     <tr>
-        <td><a href="">{{album.title}}</a></td>
+        <td><a href="{{ url_for('albums.albums_by_artists', artist_id=album.artist_id, album_id=album.id) }}">{{album.title}}</a></td>
         <td>{{album.year}}</td>
         <td><img src="file://{{album.picture_path}}" /></td>
     </tr>

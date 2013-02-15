@@ -23,9 +23,10 @@ class Artist:
 		return {"id":self.id, "title":self.title, "picture_path":self.picture_path}
 
 class Album:
-	def __init__(self, artist, title, year=0, picture_path=''):
+	def __init__(self, artist_id, artist_title, title, year=0, picture_path=''):
 		self.title = title.encode(UTF8)
-		self.artist = artist.encode(UTF8)
+		self.artist_id = artist_id.encode(UTF8)
+		self.artist = artist_title.encode(UTF8)
 		self.year = year
 		if picture_path:
 			self.picture_path = picture_path.encode(UTF8)
@@ -69,7 +70,7 @@ class Indexer:
 			picture_path=ID(stored=True))
 		album_schema = Schema(id=ID(stored=True), title=TEXT(analyzer=title_analyzer, stored=True),
 			picture_path=ID(stored=True),
-			year=ID(stored=True), artist=TEXT(stored=True))
+			year=ID(stored=True), artist_id=TEXT(stored=True), artist=TEXT(stored=True))
 		track_schema = Schema(id=ID(stored=True), title=TEXT(analyzer=title_analyzer, stored=True),
 			artist=TEXT(stored=True),
 			album=TEXT(stored=True), genre=TEXT(stored=True), length=NUMERIC(stored=True),
@@ -88,7 +89,7 @@ class Indexer:
 
 	def add_album(self, album):
 		self.album_index_writer.add_document(id=unicode(album.id, UTF8), title=unicode(album.title, UTF8),
-			artist=unicode(album.artist, UTF8), picture_path=unicode(album.picture_path, UTF8),
+			artist_id=unicode(album.artist_id, UTF8), artist=unicode(album.artist, UTF8), picture_path=unicode(album.picture_path, UTF8),
 			year=unicode(str(album.year)))
 
 	def add_track(self, track):
@@ -157,13 +158,11 @@ class Searcher:
 
 		return search_results
 
-
 	def album_by_artist(self, artist_id, page= -1, page_size=10):
-		artist = self.artist(artist_id)
-		if artist == None:
+		if artist_id == None:
 			return None
 
-		q = query.Term('artist', unicode(artist.title.lower()))
+		q = query.Term('artist_id', unicode(artist_id))
 		if page < 1:
 			documents = self.album_searcher.search(q, limit=None, sortedby='year')
 		else:
@@ -189,6 +188,8 @@ class Searcher:
 			result_list.append(self._track_from_document(doc))
 		return result_list
 
+
+
 	def all_artists(self, page= -1, page_size=10):
 		if page > 0:
 			artists = self.artist_searcher.search_page(query.Every(), page, page_size, sortedby='title')
@@ -203,14 +204,29 @@ class Searcher:
 		result_list.sort(key=lambda artist: artist.title.lower())			
 		return result_list
 
+	def all_albums(self, page= -1, page_size=10):
+		if page > 0:
+			albums = self.album_searcher.search_page(query.Every(), page, page_size, sortedby='artist_id')
+		else:
+			albums = self.album_searcher.search(query.Every(), sortedby='artist_id', limit=None)
+
+		result_list = list()
+		for album in albums:
+			new_album = self._album_from_document(album)
+			result_list.append(new_album)
+			
+		result_list.sort(key=lambda album: album.artist.lower())			
+		return result_list
+
+	
 	def close(self):
 		self.artist_searcher.close()
 		self.album_searcher.close()
 		self.track_searcher.close()
 
 	def _album_from_document(self, document):
-		return Album(title=document['title'], picture_path=document['picture_path'], artist=document['artist'],
-			year=int(document['year']))
+		return Album(title=document['title'], picture_path=document['picture_path'], artist_title=document['artist'],
+			artist_id=document['artist_id'], year=int(document['year']))
 
 	def _track_from_document(self, document):
 		return Track(title=document['title'], album=document['album'], artist=document['artist'], path=document['path'],
