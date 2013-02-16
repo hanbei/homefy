@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+    <title>Homefy - Tracks</title>
+</head>
+<body>
+<table>
+    <tr>
+        <td>Artist</td>
+        <td>Title</td>
+        <td>Genre</td>
+        <td>Path</td>
+    </tr>
+    {% for track in tracks %}
+    <tr>
+        <td>{{ track.artist }} - {{ track.album }}</td>
+        <td>{{ track.track_no }} - {{ track.title }}</td>
+        <td>{{ track.genre }}</td>
+        <td>{{ track.path }}</td>
+    </tr>
+    {% endfor %}
+</table>
+</body>

@@ -23,7 +23,7 @@ def singleton(cls):
 @singleton
 class Player(threading.Thread):
 
-	def __init__(self, ):
+	def __init__(self):
 		threading.Thread.__init__(self)		
 		self.status_lock = threading.RLock()
 		self.file_lock = threading.Lock()
@@ -36,13 +36,13 @@ class Player(threading.Thread):
 
 	def load(self, songs):
 		self.playlist = songs
-		self.current_song = 0
 		print self.playlist
+		self.current_song = 0
 
 	def play(self):		
 		if(self.playing):
 			self.stop()
-		print self.playlist[self.current_song]
+		#print self.playlist[self.current_song]
 		self._start_play()
 
 	def stop(self):

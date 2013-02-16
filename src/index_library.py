@@ -59,44 +59,51 @@ def index_albums(artist, album_path):
 
 
 def index_track(artist, album, track_path):
-    try:
-        tag = tagger.ID3v2(track_path)
-    except (UnicodeDecodeError, UnicodeEncodeError) as e:
-        print track_path
-        print e
-        print
-        return
+    #===========================================================================
+    # try:
+    #    tag = tagger.ID3v2(track_path)
+    # except (UnicodeDecodeError, UnicodeEncodeError) as e:
+    #    print track_path
+    #    print e
+    #    print
+    #    return
+    #===========================================================================
 
-    track = model.Track(artist.title, album.title, '', track_path)
-    for frame in tag.frames:
-        if len(frame.strings) > 0:
-            frame_join = frame.strings[0]#.encode('utf-8')
-        else:
-            frame_join = u''
-        if frame.fid == u'TIT2':
-            track.title = frame_join
-        elif frame.fid == u'TCON':
-            track.genre = frame_join
-        elif frame.fid == u'TRCK':
-            try:
-                track_name = os.path.split(track_path)[1]
-                name_split = track_name.split('-', 1)
-                if len(name_split) <= 1:
-                    name_split = track_name.split('.', 1)
-                track.track_no = int(name_split[0])
-            except:
-                print "Error track no: " + track_path.encode('utf-8')
-                print frame_join
-                print
-                #print '\'' + frame.strings[0] + '\'\t'
-        elif frame.fid == u'TLEN':
-            #track.length = float(frame_join.replace(':', '.'))
-            pass
-        else:
-            pass
-            #print ""
-            #print track.toString()
-            #indexer.add_track(track)
+    track_name = os.path.split(track_path)[1]
+    name_split = track_name.split('-', 1)
+    if len(name_split) <= 1:
+        name_split = track_name.split('.', 1)
+    
+    track = model.Track(artist.id, album.id, name_split[1][:-4], track_path)
+    try: 
+        track.track_no = int(name_split[0])
+    except:
+        track.track_no = -1
+    #===========================================================================
+    # for frame in tag.frames:
+    #    if len(frame.strings) > 0:
+    #        frame_join = frame.strings[0]
+    #    else:
+    #        frame_join = u'empty'
+    #    if frame.fid == u'TIT2':
+    #        #track.title = frame_join
+    #        pass
+    #    elif frame.fid == u'TCON':
+    #        pass
+    #        #track.genre = frame_join
+    #    elif frame.fid == u'TRCK':
+    #        try:
+    #        except:
+    #            print "Error track no: " + track_path.encode('utf-8')
+    #            print frame_join
+    #            print
+    #    elif frame.fid == u'TLEN':
+    #        pass
+    #    else:
+    #        pass
+    #===========================================================================
+    indexer.add_track(track)
+    
 
 indexer = model.Indexer(u'index')
 

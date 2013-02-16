@@ -22,7 +22,21 @@ def albums(artist_id):
 
 @resource.route('/artists/<artist_id>/albums/<album_id>/')
 def albums_by_artists(artist_id, album_id):
-    return "Albums By Artist" + artist_id + "/" + album_id 
+    album = homefy.injector.searcher.album(album_id)
+    if request_wants_json():
+        return jsonify(album.to_json())
+    tracks = homefy.injector.searcher.tracks_by_album(album_id)
+    return render_template('album.html', album=album, tracks=tracks) 
+
+@resource.route('/artists/<artist_id>/albums/<album_id>/play/')
+def play_album(artist_id, album_id):
+    album = homefy.injector.searcher.album(album_id)
+    tracks = homefy.injector.searcher.tracks_by_album(album_id)
+    track_files = [track.path for track in tracks]
+    homefy.injector.p.load(track_files)
+    homefy.injector.p.play()
+    return "Playing" + album.title 
+
 
 
 def request_wants_json():

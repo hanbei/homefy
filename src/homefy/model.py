@@ -37,11 +37,16 @@ class Album:
 		hash_id.update(str(year).encode(UTF8))
 		hash_id.update(self.artist)
 		self.id = hash_id.hexdigest().encode(UTF8)
+		
+	def to_json(self):
+		return {"id":self.id, "title":self.title, "picture_path":self.picture_path, 
+			"artist_id":self.artist_id, "artist":self.artist}
+
 
 class Track:
-	def __init__(self, artist, album, title, path, genre='', track_no=0, length=0.0, volume_no=0):
-		self.artist = artist.encode(UTF8)
-		self.album = album.encode(UTF8)
+	def __init__(self, artist_id, album_id, title, path, genre='', track_no=0, length=0.0, volume_no=0):
+		self.artist = artist_id.encode(UTF8)
+		self.album = album_id.encode(UTF8)
 		self.title = title.encode(UTF8)
 		self.genre = genre.encode(UTF8)
 		self.length = length
@@ -56,6 +61,11 @@ class Track:
 		s = s + "-"
 		s = s + self.title
 		return s
+	
+	def to_json(self):
+		return {"id":self.id, "track_no":self.track_no, "title":self.title, "artist":self.artist, 
+			"album":self.album, "genre":self.genre, "length":self.length,
+			"volume":self.volume_no, "path":self.path}
 
 class Type:
 	ARTIST = 'ARTIST'
@@ -94,7 +104,9 @@ class Indexer:
 
 	def add_track(self, track):
 		self.track_index_writer.add_document(artist=unicode(track.artist, UTF8), album=unicode(track.album, UTF8),
-			title=unicode(track.title, UTF8), genre=unicode(track.genre, UTF8), length=track.length,
+			title=unicode(track.title, UTF8), 
+			genre=unicode(track.genre, UTF8), 
+			length=track.length,
 			track_no=track.track_no, volume_no=track.volume_no, id=unicode(track.id, UTF8), path=unicode(track.path, UTF8))
 
 	def commit(self):
@@ -174,11 +186,7 @@ class Searcher:
 
 
 	def tracks_by_album(self, album_id, page= -1, page_size=10):
-		album = self.album(album_id)
-		if album == None:
-			return None
-
-		q = query.Term('album', unicode(album.title.lower()))
+		q = query.Term('album', unicode(album_id))
 		if page < 1:
 			documents = self.track_searcher.search(q, limit=None, sortedby='track_no')
 		else:
@@ -187,7 +195,6 @@ class Searcher:
 		for doc in documents:
 			result_list.append(self._track_from_document(doc))
 		return result_list
-
 
 
 	def all_artists(self, page= -1, page_size=10):
@@ -218,6 +225,20 @@ class Searcher:
 		result_list.sort(key=lambda album: album.artist.lower())			
 		return result_list
 
+	def all_tracks(self, page= -1, page_size=10):
+		if page > 0:
+			tracks = self.track_searcher.search_page(query.Every(), page, page_size, sortedby='track_no')
+		else:
+			tracks = self.track_searcher.search(query.Every(), sortedby='track_no', limit=None)
+
+		result_list = list()
+		for track in tracks:
+			new_track = self._track_from_document(track)
+			result_list.append(new_track)
+			
+		result_list.sort(key=lambda track: track.track_no)			
+		return result_list
+
 	
 	def close(self):
 		self.artist_searcher.close()
@@ -229,7 +250,7 @@ class Searcher:
 			artist_id=document['artist_id'], year=int(document['year']))
 
 	def _track_from_document(self, document):
-		return Track(title=document['title'], album=document['album'], artist=document['artist'], path=document['path'],
+		return Track(title=document['title'], album_id=document['album'], artist_id=document['artist'], path=document['path'],
 			track_no=int(document['track_no']), length=int(document['length']), volume_no=int(document['volume_no']),
 			genre=document['genre'])
 

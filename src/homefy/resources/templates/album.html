@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+    <title>Homefy - Artists - Albums</title>
+</head>
+<body>
+<h1>{{album.artist}} - {{album.title}}</h1>
+<table>
+    <tr>
+        <td>Track No.</td>
+        <td>Title</td>
+        <td>Length</td>
+        <td>Genre</td>
+        <td>Path</td>
+    </tr>
+    {% for track in tracks %}
+    <tr>
+    	<td>{{track.track_no}}</td>
+        <td><a href="{{ url_for('tracks.track', artist_id=album.artist_id, album_id=album.id, track_id=track.id) }}">{{track.title}}</a></td>
+        <td>{{track.length}}</td>
+        <td>{{track.genre}}</td>
+        <td>{{track.path}}</td>
+    </tr>
+    {% endfor %}
+</table>
+</body>
