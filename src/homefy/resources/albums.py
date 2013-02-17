@@ -35,7 +35,7 @@ def play_album(artist_id, album_id):
     track_files = [track.path for track in tracks]
     homefy.injector.p.load(track_files)
     homefy.injector.p.play()
-    return "Playing" + album.title 
+    return "Playing " + album.title 
 
 
 

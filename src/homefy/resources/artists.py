@@ -9,11 +9,6 @@ from flask.helpers import jsonify
 
 resource = Blueprint('artists', __name__, template_folder='templates')
 
-@resource.route('/stop/')
-def stop():
-    homefy.injector.p.stop()
-    return "stopped"
-
 @resource.route('/artists/')
 def list_artists():
     all_artists= homefy.injector.searcher.all_artists()

@@ -7,20 +7,27 @@ class Status:
 		self.song_length = song_length
 		self.elapsed_time = elapsed_time
 		self.remaining_time = remaining_time
+		self.number_playing = -1
 
 	def copy(self):
 		s = Status(self.song_length, self.elapsed_time, self.remaining_time)
+		s.number_playing = self.number_playing
 		return s
+	
+	def to_json(self):
+		return {"current_song":self.number_playing, "length":self.song_length, "elapsed":self.elapsed_time, "remaining":self.remaining_time}
 
-def singleton(cls):
-	instances = {}
-	def getinstance():
-		if cls not in instances:
-			instances[cls] = cls()
-		return instances[cls]
-	return getinstance
-
-@singleton
+#===============================================================================
+# def singleton(cls):
+#	instances = {}
+#	def getinstance():
+#		if cls not in instances:
+#			instances[cls] = cls()
+#		return instances[cls]
+#	return getinstance
+# 
+# @singleton
+#===============================================================================
 class Player(threading.Thread):
 
 	def __init__(self):
@@ -31,36 +38,47 @@ class Player(threading.Thread):
 		self.playing = False
 		self.paused = False
 		self.closed = False
-		self.current_status = Status()
+		self._current_status = Status()
+		self._last_command = ""
 		self.start()
 
 	def load(self, songs):
 		self.playlist = songs
-		print self.playlist
 		self.current_song = 0
 
-	def play(self):		
+	def play(self):
+		self.status_lock.acquire()			
 		if(self.playing):
 			self.stop()
-		#print self.playlist[self.current_song]
+		self._last_command = "play"
 		self._start_play()
+		self.status_lock.release()
+
 
 	def stop(self):
+		self.status_lock.acquire()
 		if self.playing:
 			self._send('s')
 		self.playing = False
+		self._last_command = "stop"
+		self.status_lock.release()
+
 
 	def pause(self):
+		self.status_lock.acquire()
 		self._send('p')
 		self.paused = not self.paused
+		self._last_command = "pause"
+		self.status_lock.release()
 
 	def next(self):
 		"""Play the next song in the playlist."""
+		self.status_lock.acquire()
 		self.current_song += 1
-		if self.current_song >= len(self.playlist) or self.playing:
-			self.stop()
-		else:
-			self._start_play()
+		self._last_command = "next"
+		self._start_play()
+		self.status_lock.release()
+
 
 	def prev(self):
 		"""Play the song that was played before. 
@@ -68,11 +86,11 @@ class Player(threading.Thread):
 		The current song will be stopped and the song that has been played
 		previously will be played. 
 		"""
+		self.status_lock.acquire()
 		self.current_song -= 1
-		if self.current_song < 0 or self.playing:
-			self.stop()
-		else:
-			self._start_play()
+		self._last_command = "prev"
+		self._start_play()
+		self.status_lock.release()
 
 	def close(self):
 		"""Close the player and terminate the mpg123 subprocess. 
@@ -87,7 +105,7 @@ class Player(threading.Thread):
 		self.file_lock.acquire()
 		if not self.closed:
 			self._send('q')
-			buf = self.from_player.read()
+			self.from_player.read()
 			self.from_player.close()
 			self.to_player.close
 			self.closed = True
@@ -95,13 +113,18 @@ class Player(threading.Thread):
 
 	def status(self):
 		self.status_lock.acquire()
-		s = self.current_status.copy()
+		s = self._current_status.copy()
 		self.status_lock.release()
 		return s
 
 	def _start_play(self):
+		print "Playing " + str(self.current_song)
 		self._send('l', self.playlist[self.current_song])		
 		self.playing = True
+		self.status_lock.acquire()
+		self._current_status.number_playing = self.current_song
+		self.status_lock.release()
+
 
 	def _send(self, command, data=''):
 		if(data == ''):
@@ -122,20 +145,23 @@ class Player(threading.Thread):
 			self.status_lock.release()
 
 	def _parse_line(self, line):
-		if line:
+		if not line:
 			return
 		splitted_line = line.split(' ')
 		if splitted_line[0] == '@S':
-			self.current_status.song_length = int(splitted_line[11])
+			print line
+			self._current_status.song_length = int(splitted_line[11])
 		elif splitted_line[0] == '@P':
+			print line
 			if splitted_line[1].strip() == '0':
-				self.playing = False
-				self.next()
+				if self.playing and self._last_command != 'stop':
+					self.playing = False
+					self.next()
 		elif splitted_line[0] == '@I':
 			pass
 		elif splitted_line[0] == '@F':
-			self.current_status.elapsed_time = float(splitted_line[3])
-			self.current_status.remaining_time = float(splitted_line[4])
+			self._current_status.elapsed_time = float(splitted_line[3])
+			self._current_status.remaining_time = float(splitted_line[4])
 		else:
 			pass
 
@@ -149,27 +175,35 @@ class StatusPrinter(threading.Thread):
 		while self.running:
 			status = self.player.status()
 			print "%f/%d %s" % (status.elapsed_time, status.song_length, str(self.player.playing))
+			print p._last_command
 			time.sleep(0.5)
 
 if __name__ == "__main__":
-	import sys
-
 	p = Player()
 	sp = StatusPrinter(p)
+	
 
-	p.load(sys.argv[1:])
+	p.load(['/home/hanbei/test2.mp3','/home/hanbei/test.mp3','/home/hanbei/test3.mp3'])
 	p.play()
-	#time.sleep(0.5)
-	#p.stop()
-	#time.sleep(10)
-	#p.next()
-	#time.sleep(10)
-	#p.next()
-	#time.sleep(1)
-	sp.start()
-	while p.playing:
-		time.sleep(1)
-	sp.running = False
+	
+	print p._last_command
+	print p.status().number_playing
+	time.sleep(2)
+	p.next()
+	print p._last_command
+	print p.status().number_playing
+	time.sleep(2)
+	p.next()
+	print "Last Command: " + p._last_command
+	print p.status().number_playing
+	time.sleep(2)
+	p.stop()
+	
+#	sp.start()
+#	while p.playing:
+#		time.sleep(1)
+#	sp.running = False
+	
 	p.close()
 
 
